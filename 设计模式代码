@@ -1,0 +1,855 @@
+一 简单工厂与工厂模式
+简单工厂模式：
+1产品抽象类：
+public interface Phone { void make(); }
+2具体产品：public class XiaomiPhone implements Phone {
+    @Override
+    public void make() {
+        System.out.println("生产小米手机");
+    }
+}
+public class HuaweiPhone implements Phone {
+    @Override
+    public void make() {
+        System.out.println("生产华为手机");
+    }
+}
+3简单工厂类：
+public class PhoneSimpleFactory {
+    public static Phone createPhone(String type){
+        if ("xiaomi".equals(type)){
+            return new XiaomiPhone();
+        } else if ("huawei".equals(type)){
+            return new HuaweiPhone();
+        }
+        return null;
+    }
+}
+4测试调用：
+public class Test {
+    public static void main(String[] args) {
+        Phone p1 = PhoneSimpleFactory.createPhone("xiaomi");
+        p1.make();
+        Phone p2 = PhoneSimpleFactory.createPhone("huawei");
+        p2.make();
+    }
+}
+工厂方法模式：
+1，2和工厂方法模式一样
+3工厂抽象接口：
+public interface PhoneFactory {
+    Phone createPhone();
+}
+4具体工厂：
+public class XiaomiFactory implements PhoneFactory {
+    @Override
+    public Phone createPhone() {
+        return new XiaomiPhone();
+    }
+}
+public class HuaweiFactory implements PhoneFactory {
+    @Override
+    public Phone createPhone() {
+        return new HuaweiPhone();
+    }
+}
+5测试调用：
+public class FactoryTest {
+    public static void main(String[] args) {
+        PhoneFactory f1 = new XiaomiFactory();
+        Phone p1 = f1.createPhone();
+        p1.make();
+
+        PhoneFactory f2 = new HuaweiFactory();
+        Phone p2 = f2.createPhone();
+        p2.make();
+    }
+}
+工厂方法：一个产品对应一个工厂
+
+
+二 建造者模式：
+1产品类（手机）
+public class Phone {
+    private String cpu;
+    private String screen;
+    private int camera;
+    private int battery; 
+    private Phone(PhoneBuilder builder){
+        this.cpu = builder.cpu;
+        this.screen = builder.screen;
+        this.camera = builder.camera;
+        this.battery = builder.battery;
+    }
+    public void showInfo(){
+        System.out.println("CPU：" + cpu);
+        System.out.println("屏幕：" + screen);
+        System.out.println("像素：" + camera);
+        System.out.println("电池：" + battery);
+    }
+    public static class PhoneBuilder{
+        private String cpu;
+        private String screen;
+        private int camera;
+        private int battery;      
+        public PhoneBuilder(String cpu,String screen){
+            this.cpu = cpu;
+            this.screen = screen;
+        }
+        public PhoneBuilder setCamera(int camera){
+            this.camera = camera;
+            return this;
+        }
+        public PhoneBuilder setBattery(int battery){
+            this.battery = battery;
+            return this;
+        }
+        public Phone build(){
+            return new Phone(this);
+        }
+    }
+}
+2测试调用：
+public class Test {
+    public static void main(String[] args) {
+        Phone phone = new Phone.PhoneBuilder("骁龙8 Gen3","2K屏")
+                .setCamera(5000)
+                .setBattery(5000)
+                .build();
+        phone.showInfo();
+    }
+}
+
+
+三原型模式和单例模式
+1单例模式：
+public class LazySingleton {
+    private static LazySingleton instance;
+    private LazySingleton(){}
+    public static synchronized LazySingleton getInstance(){
+        if(instance == null){
+            instance = new LazySingleton();
+        }
+        return instance;
+    }
+}
+测试：
+public class Test {
+    public static void main(String[] args) {
+        Singleton s1 = Singleton.getInstance();
+        Singleton s2 = Singleton.getInstance();
+        System.out.println(s1 == s2);
+    }
+}
+2原型模式：
+public class Student implements Cloneable {
+    private String name;
+    private int age;
+    public Student(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public int getAge() { return age; }
+}
+测试：
+public class ProtoTest {
+    public static void main(String[] args) throws CloneNotSupportedException {
+        Student stu1 = new Student("张三", 20);
+        Student stu2 = (Student) stu1.clone();
+        System.out.println(stu1 == stu2);
+        System.out.println(stu2.getName() + " " + stu2.getAge());
+    }
+}
+
+
+四适配器与桥接模式：
+1适配器模式：
+public class Adaptee {
+    public void specificRequest(){
+        
+    }
+}
+public interface Target {
+    void request();
+}
+public class Adapter extends Adaptee implements Target {
+    @Override
+    public void request() {
+        specificRequest();
+    }
+}
+public class Adaptee {
+    public void specificRequest(){
+        
+    }
+}
+public interface Target {
+    void request();
+}
+public class Adapter implements Target {
+    private Adaptee adaptee;
+    public Adapter(Adaptee adaptee){
+        this.adaptee=adaptee;
+    }
+    @Override
+    public void request() {
+        adaptee.specificRequest();
+    }
+}
+测试：
+public class Test {
+    public static void main(String[] args) {
+        Target t=new Adapter(new Adaptee());
+        t.request();
+    }
+}
+2桥接模式
+public interface Color {
+    void paint();
+}
+public class Red implements Color {
+    @Override
+    public void paint() {
+        
+    }
+}
+public class Blue implements Color {
+    @Override
+    public void paint() {
+        
+    }
+}
+public abstract class Shape {
+    protected Color color;
+    public Shape(Color color){
+        this.color=color;
+    }
+    public abstract void draw();
+}
+public class Circle extends Shape {
+    public Circle(Color color) {
+        super(color);
+    }
+    @Override
+    public void draw() {
+        color.paint();
+    }
+}
+public class Rectangle extends Shape {
+    public Rectangle(Color color) {
+        super(color);
+    }
+    @Override
+    public void draw() {
+        color.paint();
+    }
+}
+测试
+public class BridgeTest {
+    public static void main(String[] args) {
+        Shape s1=new Circle(new Red());
+        s1.draw();
+        Shape s2=new Rectangle(new Blue());
+        s2.draw();
+    }
+}
+
+
+五 组合与装饰模式：
+组合模式：
+public abstract class Component {
+    public void add(Component c){}
+    public void remove(Component c){}
+    public Component getChild(int i){return null;}
+    public abstract void operation();
+}
+
+public class Leaf extends Component {
+    @Override
+    public void operation(){}
+}
+import java.util.ArrayList;
+import java.util.List;
+public class Composite extends Component {
+    private List<Component> list = new ArrayList<>();
+    @Override
+    public void add(Component c){
+        list.add(c);
+    }
+    @Override
+    public void remove(Component c){
+        list.remove(c);
+    }
+    @Override
+    public Component getChild(int i){
+        return list.get(i);
+    }
+    @Override
+    public void operation(){
+        for(Component c : list){
+            c.operation();
+        }
+    }
+}
+测试：
+public class CompositeTest {
+    public static void main(String[] args) {
+        Composite root = new Composite();
+        Composite branch = new Composite();
+        Leaf leaf1 = new Leaf();
+        Leaf leaf2 = new Leaf();
+        root.add(branch);
+        branch.add(leaf1);
+        branch.add(leaf2);
+        root.operation();
+    }
+}
+装饰模式
+public abstract class Component {
+    public abstract void operation();
+}
+public class ConcreteComponent extends Component {
+    @Override
+    public void operation(){}
+}
+public abstract class Decorator extends Component {
+    protected Component component;
+    public Decorator(Component component){
+        this.component = component;
+    }
+    @Override
+    public void operation(){
+        component.operation();
+    }
+}
+public class ConcreteDecorator extends Decorator {
+    public ConcreteDecorator(Component component) {
+        super(component);
+    }
+    @Override
+    public void operation(){
+        super.operation();
+        addBehavior();
+    }
+    private void addBehavior(){}
+}
+测试：
+public class DecoratorTest {
+    public static void main(String[] args) {
+        Component c = new ConcreteComponent();
+        Component decorator = new ConcreteDecorator(c);
+        decorator.operation();
+    }
+}
+
+
+六 外观与享元模式：
+外观模式
+public class SubSystemOne {
+    public void methodOne(){}
+}
+public class SubSystemTwo {
+    public void methodTwo(){}
+}
+public class SubSystemThree {
+    public void methodThree(){}
+}
+public class Facade {
+    private SubSystemOne one;
+    private SubSystemTwo two;
+    private SubSystemThree three;
+    public Facade(){
+        one=new SubSystemOne();
+        two=new SubSystemTwo();
+        three=new SubSystemThree();
+    }
+    public void allMethod(){
+        one.methodOne();
+        two.methodTwo();
+        three.methodThree();
+    }
+}
+测试
+public class FacadeTest {
+    public static void main(String[] args) {
+        Facade f=new Facade();
+        f.allMethod();
+    }
+}
+享元模式：
+public abstract class Flyweight {
+    public abstract void operation(String extrinsic);
+}
+
+public class ConcreteFlyweight extends Flyweight {
+    @Override
+    public void operation(String extrinsic){}
+}
+import java.util.HashMap;
+import java.util.Map;
+public class FlyweightFactory {
+    private Map<String,Flyweight> pool=new HashMap<>();
+    public Flyweight getFlyweight(String key){
+        if(!pool.containsKey(key)){
+            pool.put(key,new ConcreteFlyweight());
+        }
+        return pool.get(key);
+    }
+}
+测试：
+public class FlyweightTest {
+    public static void main(String[] args) {
+        FlyweightFactory factory=new FlyweightFactory();
+        Flyweight f1=factory.getFlyweight("A");
+        Flyweight f2=factory.getFlyweight("A");
+        System.out.println(f1==f2);
+        f1.operation("外部状态1");
+    }
+}
+
+
+七 代理模式：
+静态代理
+public interface Subject {
+    void request();
+}
+public class RealSubject implements Subject {
+    public void request() {}
+}
+public class Proxy implements Subject {
+    private RealSubject realSubject;
+    public Proxy() {
+        realSubject = new RealSubject();
+    }
+    public void request() {
+        realSubject.request();
+    }
+}
+动态代理
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+public interface Subject {
+    void request();
+}
+public class RealSubject implements Subject {
+    public void request() {}
+}
+public class MyInvocationHandler implements InvocationHandler {
+    private Object target;
+    public MyInvocationHandler(Object target) {
+        this.target = target;
+    }
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        return method.invoke(target, args);
+    }
+}
+public class ProxyFactory {
+    public static Object getProxy(Object target) {
+        return Proxy.newProxyInstance(
+            target.getClass().getClassLoader(),
+            target.getClass().getInterfaces(),
+            new MyInvocationHandler(target)
+        );
+    }
+}
+测试：
+public class Test {
+    public static void main(String[] args) {
+        Subject real = new RealSubject();
+        Subject proxy = (Subject) ProxyFactory.getProxy(real);
+        proxy.request();
+    }
+}
+
+
+八 职责与命令模式：
+职责模式：public abstract class Handler {
+    protected Handler nextHandler;
+    public void setNextHandler(Handler handler){
+        nextHandler=handler;
+    }
+    public abstract void handle(int level);
+}
+public class HandlerA extends Handler {
+    @Override
+    public void handle(int level){
+        if(level<=3){
+            System.out.println("A处理请求");
+        }else if(nextHandler!=null){
+            nextHandler.handle(level);
+        }
+    }
+}
+public class HandlerB extends Handler {
+    @Override
+    public void handle(int level){
+        if(level<=6){
+            System.out.println("B处理请求");
+        }else if(nextHandler!=null){
+            nextHandler.handle(level);
+        }
+    }
+}
+public class HandlerC extends Handler {
+    @Override
+    public void handle(int level){
+        System.out.println("C处理请求");
+    }
+}
+测试：public class ChainTest {
+    public static void main(String[] args) {
+        Handler a=new HandlerA();
+        Handler b=new HandlerB();
+        Handler c=new HandlerC();
+        a.setNextHandler(b);
+        b.setNextHandler(c);
+        a.handle(5);
+    }
+}
+命令模式：
+public interface Command {
+    void execute();
+}
+public class Receiver {
+    public void doWork(){
+        System.out.println("接收者执行任务");
+    }
+}
+public class ConcreteCommand implements Command {
+    private Receiver receiver;
+    public ConcreteCommand(Receiver receiver){
+        this.receiver=receiver;
+    }
+    @Override
+    public void execute(){
+        receiver.doWork();
+    }
+}
+public class Invoker {
+    private Command command;
+    public void setCommand(Command command){
+        this.command=command;
+    }
+    public void action(){
+        command.execute();
+    }
+}
+测试：public class CommandTest {
+    public static void main(String[] args) {
+        Receiver receiver=new Receiver();
+        Command command=new ConcreteCommand(receiver);
+        Invoker invoker=new Invoker();
+        invoker.setCommand(command);
+        invoker.action();
+    }
+}
+
+
+九 状态与观察者模式
+状态模式：
+public abstract class State {
+    public abstract void handle(Context context);
+}
+public class ConcreteStateA extends State {
+    public void handle(Context context) {
+        context.setState(new ConcreteStateB());
+    }
+}
+public class ConcreteStateB extends State {
+    public void handle(Context context) {
+        context.setState(new ConcreteStateA());
+    }
+}
+public class Context {
+    private State state;
+    public Context(){
+        state=new ConcreteStateA();
+    }
+    public void setState(State state){
+        this.state=state;
+    }
+    public void request(){
+        state.handle(this);
+    }
+}
+测试public class StateTest {
+    public static void main(String[] args) {
+        Context c=new Context();
+        c.request();
+        c.request();
+    }
+}
+观察者模式：
+import java.util.ArrayList;
+import java.util.List;
+public interface Observer {
+    void update();
+}
+public class ConcreteObserver implements Observer {
+    public void update(){}
+}
+public abstract class Subject {
+    protected List<Observer> obs=new ArrayList<>();
+    public void add(Observer o){
+        obs.add(o);
+    }
+    public void remove(Observer o){
+        obs.remove(o);
+    }
+    public abstract void notifyObserver();
+}
+public class ConcreteSubject extends Subject {
+    public void notifyObserver(){
+        for(Observer o:obs){
+            o.update();
+        }
+    }
+}测试：public class ObserverTest {
+    public static void main(String[] args) {
+        ConcreteSubject s=new ConcreteSubject();
+        Observer o1=new ConcreteObserver();
+        Observer o2=new ConcreteObserver();
+        s.add(o1);
+        s.add(o2);
+        s.notifyObserver();
+    }
+}
+
+
+十 解释器模式
+定义抽象表达式
+public abstract class Expression {
+    public abstract int interpret();
+}
+终结符表达式（数字）
+public class NumberExpression extends Expression {
+    private int num;
+    public NumberExpression(int num) {
+        this.num = num;
+    }
+    @Override
+    public int interpret() {
+        return num;
+    }
+}
+非终结符表达式（运算符）
+public class AddExpression extends Expression {
+    private Expression left;
+    private Expression right;
+    public AddExpression(Expression left, Expression right) {
+        this.left = left;
+        this.right = right;
+    }
+    @Override
+    public int interpret() {
+        return left.interpret() + right.interpret();
+    }
+}
+测试调用：
+public class InterpreterTest {
+    public static void main(String[] args) {
+        Expression a = new NumberExpression(10);
+        Expression b = new NumberExpression(20);
+        Expression add = new AddExpression(a, b);
+        System.out.println(add.interpret());
+    }
+}
+
+
+十一 备忘录与中介者模式
+备忘录模式：
+public class Memento {
+    private String state;
+    public Memento(String state){
+        this.state=state;
+    }
+    public String getState(){
+        return state;
+    }
+}
+public class Originator {
+    private String state;
+    public void setState(String state){
+        this.state=state;
+    }
+    public Memento createMemento(){
+        return new Memento(state);
+    }
+    public void restoreMemento(Memento memento){
+        this.state=memento.getState();
+    }
+}
+public class Caretaker {
+    private Memento memento;
+    public void setMemento(Memento memento){
+        this.memento=memento;
+    }
+    public Memento getMemento(){
+        return memento;
+    }
+}
+测试：public class MementoTest {
+    public static void main(String[] args) {
+        Originator o=new Originator();
+        Caretaker c=new Caretaker();
+        o.setState("状态1");
+        c.setMemento(o.createMemento());
+        o.setState("状态2");
+        o.restoreMemento(c.getMemento());
+    }
+}
+中介者模式：public abstract class Mediator {
+    public abstract void contact(String msg,Colleague colleague);
+}
+
+public abstract class Colleague {
+    protected Mediator mediator;
+    public Colleague(Mediator mediator){
+        this.mediator=mediator;
+    }
+    public abstract void receive(String msg);
+}
+
+public class ConcreteMediator extends Mediator {
+    private Colleague c1;
+    private Colleague c2;
+    public void setC1(Colleague c1){
+        this.c1=c1;
+    }
+    public void setC2(Colleague c2){
+        this.c2=c2;
+    }
+    @Override
+    public void contact(String msg,Colleague colleague){
+        if(colleague==c1){
+            c2.receive(msg);
+        }else{
+            c1.receive(msg);
+        }
+    }
+}
+public class ConcreteColleagueA extends Colleague {
+    public ConcreteColleagueA(Mediator mediator) {
+        super(mediator);
+    }
+    public void send(String msg){
+        mediator.contact(msg,this);
+    }
+    @Override
+    public void receive(String msg){
+    }
+}
+public class ConcreteColleagueB extends Colleague {
+    public ConcreteColleagueB(Mediator mediator) {
+        super(mediator);
+    }
+    public void send(String msg){
+        mediator.contact(msg,this);
+    }
+    @Override
+    public void receive(String msg){
+    }
+}
+测试public class MediatorTest {
+    public static void main(String[] args) {
+        ConcreteMediator m=new ConcreteMediator();
+        ConcreteColleagueA a=new ConcreteColleagueA(m);
+        ConcreteColleagueB b=new ConcreteColleagueB(m);
+        m.setC1(a);
+        m.setC2(b);
+        a.send("你好");
+    }
+}
+
+
+十二 迭代器、访问者、模板方法、策略模式
+策略模式：
+public interface Strategy{
+    void doStrategy();
+}
+public class StrategyOne implements Strategy{
+    public void doStrategy(){}
+}
+public class StrategyTwo implements Strategy{
+    public void doStrategy(){}
+}
+public class Context{
+    private Strategy strategy;
+    public Context(Strategy s){
+        strategy=s;
+    }
+    public void execute(){
+        strategy.doStrategy();
+    }
+}
+模板方法模式
+public abstract class Template{
+    public final void templateMethod(){
+        stepOne();
+        stepTwo();
+    }
+    public abstract void stepOne();
+    public abstract void stepTwo();
+}
+
+public class ConcreteTemplate extends Template{
+    public void stepOne(){}
+    public void stepTwo(){}
+}
+迭代器模式public interface Iterator{
+    boolean hasNext();
+    Object next();
+}
+public interface Aggregate{
+    Iterator iterator();
+}
+public class ConcreteAggregate implements Aggregate{
+    private Object[] arr;
+    public ConcreteAggregate(Object[] a){
+        arr=a;
+    }
+    public Iterator iterator(){
+        return new ConcreteIterator(arr);
+    }
+}
+public class ConcreteIterator implements Iterator{
+    private Object[] array;
+    private int index=0;
+    public ConcreteIterator(Object[] a){
+        array=a;
+    }
+    public boolean hasNext(){
+        return index<array.length;
+    }
+    public Object next(){
+        return array[index++];
+    }
+}
+访问者模式public interface Visitor{
+    void visit(ElementA a);
+    void visit(ElementB b);
+}
+public abstract class Element{
+    public abstract void accept(Visitor v);
+}
+public class ElementA extends Element{
+    public void accept(Visitor v){
+        v.visit(this);
+    }
+}
+public class ElementB extends Element{
+    public void accept(Visitor v){
+        v.visit(this);
+    }
+}
+public class ConcreteVisitor implements Visitor{
+    public void visit(ElementA a){}
+    public void visit(ElementB b){}
+}
