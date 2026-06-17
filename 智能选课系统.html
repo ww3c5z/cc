@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>智能选课系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Microsoft YaHei,sans-serif;}
+body{background:#f7f8fa;}
+.wrap{width:1200px;margin:30px auto;}
+.header{text-align:center;background:#fff;padding:20px;border-radius:8px;margin-bottom:20px;}
+.content{display:flex;gap:20px;}
+.left{flex:2;background:#fff;padding:25px;border-radius:8px;}
+.right{flex:1;background:#fff;padding:25px;border-radius:8px;}
+.title{font-size:18px;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid #eee;}
+.courseList{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;}
+.courseItem{border:1px solid #eee;padding:16px;border-radius:6px;}
+.courseName{font-weight:bold;margin-bottom:8px;}
+.courseInfo{font-size:14px;color:#555;margin:4px 0;}
+.btnChoose{background:#007bff;color:#fff;border:none;padding:6px 12px;border-radius:4px;margin-top:10px;cursor:pointer;}
+.btnCancel{background:#6c757d;color:#fff;border:none;padding:6px 12px;border-radius:4px;margin-top:10px;cursor:pointer;}
+.selectedArea{margin-top:30px;}
+.selectedItem{display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid #eee;}
+.btnDrop{background:#dc3545;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;}
+.creditTotal{margin-top:15px;font-weight:bold;color:#c00;}
+.aiTip{font-size:13px;color:#777;margin-bottom:10px;line-height:1.5;}
+.chatBox{height:430px;border:1px solid #eee;border-radius:6px;display:flex;flex-direction:column;}
+.chatMsg{flex:1;padding:15px;overflow-y:auto;}
+.userMsg{background:#007bff;color:#fff;padding:8px 12px;border-radius:12px 12px 2px 12px;margin:8px 0 8px auto;width:fit-content;max-width:85%;}
+.aiMsg{background:#f1f1f1;padding:8px 12px;border-radius:12px 12px 12px 2px;margin:8px 0;width:fit-content;max-width:85%;}
+.chatInput{display:flex;padding:10px;border-top:1px solid #eee;}
+.aiInput{flex:1;padding:8px;border:1px solid #ddd;border-radius:4px;outline:none;}
+.sendBtn{margin-left:8px;background:#007bff;color:#fff;border:none;padding:0 16px;border-radius:4px;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="header">
+<h1>智能选课系统</h1>
+</div>
+<div class="content">
+<div class="left">
+<h3 class="title">可选课程列表</h3>
+<div class="courseList" id="courseList"></div>
+<div class="selectedArea">
+<h3 class="title">已选课程</h3>
+<div id="selectedList"></div>
+<div class="creditTotal" id="totalCredit">总学分：0</div>
+</div>
+</div>
+<div class="right">
+<h3 class="title">AI选课助手</h3>
+<p class="aiTip">支持：选课、退课、查学分、查详情、冲突检测、推荐高分课、难度排行、清空选课、功能说明</p>
+<div class="chatBox">
+<div class="chatMsg" id="chatMsg"></div>
+<div class="chatInput">
+<input class="aiInput" id="aiInput" placeholder="输入指令咨询">
+<button class="sendBtn" onclick="sendMsg()">发送</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+class Course{
+constructor(id,name,teacher,time,credit,diff,score){
+this.id=id;
+this.name=name;
+this.teacher=teacher;
+this.time=time;
+this.credit=credit;
+this.diff=diff;
+this.score=score;
+}
+}
+class CourseFactory{
+static createCourse(id,name,teacher,time,credit,diff,score){
+return new Course(id,name,teacher,time,credit,diff,score);
+}
+}
+class SelectionManager{
+static instance;
+constructor(){
+this.courses=[];
+this.selected=[];
+this.observers=[];
+}
+static getInstance(){
+if(!SelectionManager.instance){
+SelectionManager.instance=new SelectionManager();
+}
+return SelectionManager.instance;
+}
+addObserver(o){
+this.observers.push(o);
+}
+notify(){
+this.observers.forEach(o=>o.update());
+}
+addCourse(c){
+this.courses.push(c);
+}
+choose(id){
+let c=this.courses.find(x=>x.id===id);
+if(!this.selected.some(x=>x.id===id)){
+this.selected.push(c);
+this.notify();
+}
+}
+drop(id){
+this.selected=this.selected.filter(x=>x.id!==id);
+this.notify();
+}
+clear(){
+this.selected=[];
+this.notify();
+}
+getTotalCredit(){
+return this.selected.reduce((t,c)=>t+c.credit,0);
+}
+checkConflict(){
+let times=this.selected.map(c=>c.time);
+for(let i=0;i<times.length;i++){
+for(let j=i+1;j<times.length;j++){
+if(times[i]===times[j])return true;
+}
+}
+return false;
+}
+}
+class UIObserver{
+update(){
+renderAll();
+}
+}
+class AIObserver{
+update(){
+showAiMsg("选课状态已更新");
+}
+}
+let manager=SelectionManager.getInstance();
+let ui=new UIObserver();
+let ai=new AIObserver();
+manager.addObserver(ui);
+manager.addObserver(ai);
+let data=[
+[1,"设计模式","张教授","周一1-2节",3,"中等","易高分"],
+[2,"Java开发","李老师","周二3-4节",4,"偏难","正常"],
+[3,"数据库原理","王老师","周一3-4节",3,"简单","极易高分"],
+[4,"计算机网络","赵老师","周三1-2节",4,"中等","正常"],
+[5,"操作系统","陈教授","周四1-2节",3,"偏难","不易高分"],
+[6,"前端开发","周老师","周五3-4节",3,"简单","易高分"],
+[7,"软件工程","吴老师","周三3-4节",2,"简单","极易高分"],
+[8,"数据结构","郑老师","周二1-2节",4,"极难","不易高分"]
+];
+data.forEach(item=>{
+let c=CourseFactory.createCourse(...item);
+manager.addCourse(c);
+});
+function renderAll(){
+let courseHtml="";
+manager.courses.forEach(c=>{
+let sel=manager.selected.some(x=>x.id===c.id);
+courseHtml+=`
+<div class="courseItem">
+<div class="courseName">${c.name}</div>
+<div class="courseInfo">教师：${c.teacher}</div>
+<div class="courseInfo">时间：${c.time}</div>
+<div class="courseInfo">学分：${c.credit}</div>
+<div class="courseInfo">难度：${c.diff}</div>
+${sel?`<button class="btnCancel" onclick="dropCourse(${c.id})">已选</button>`:`<button class="btnChoose" onclick="chooseCourse(${c.id})">选课</button>`}
+</div>`;
+});
+document.getElementById("courseList").innerHTML=courseHtml;
+let selHtml="";
+if(manager.selected.length===0){
+selHtml="<div style='padding:10px;color:#666'>暂无已选课程</div>";
+}else{
+manager.selected.forEach(c=>{
+selHtml+=`
+<div class="selectedItem">
+<span>${c.name}（${c.credit}学分）</span>
+<button class="btnDrop" onclick="dropCourse(${c.id})">退课</button>
+</div>`;
+});
+}
+document.getElementById("selectedList").innerHTML=selHtml;
+document.getElementById("totalCredit").innerText=`总学分：${manager.getTotalCredit()}`;
+}
+function chooseCourse(id){
+manager.choose(id);
+}
+function dropCourse(id){
+manager.drop(id);
+}
+function sendMsg(){
+let val=document.getElementById("aiInput").value.trim();
+if(!val)return;
+showUserMsg(val);
+document.getElementById("aiInput").value="";
+setTimeout(()=>{
+let rep=getReply(val);
+showAiMsg(rep);
+},500);
+}
+function showUserMsg(t){
+let d=document.getElementById("chatMsg");
+d.innerHTML+=`<div class="userMsg">${t}</div>`;
+d.scrollTop=d.scrollHeight;
+}
+function showAiMsg(t){
+let d=document.getElementById("chatMsg");
+d.innerHTML+=`<div class="aiMsg">${t}</div>`;
+d.scrollTop=d.scrollHeight;
+}
+function getReply(s){
+if(s.includes("选课")&&s.includes("课程")){
+let n=s.replace("选课","").replace("课程","").trim();
+let c=manager.courses.find(x=>x.name.includes(n));
+if(c){manager.choose(c.id);return `已为你选择课程：${c.name}`;}
+return "未找到该课程";
+}
+if(s.includes("退课")&&s.includes("课程")){
+let n=s.replace("退课","").replace("课程","").trim();
+let c=manager.courses.find(x=>x.name.includes(n));
+if(c){manager.drop(c.id);return `已为你退课：${c.name}`;}
+return "未找到该课程";
+}
+if(s.includes("总学分")){
+return `当前已选${manager.selected.length}门，总学分${manager.getTotalCredit()}`;
+}
+if(s.includes("详情")){
+let n=s.replace("详情","").trim();
+let c=manager.courses.find(x=>x.name.includes(n));
+if(!c)return "无此课程";
+return `${c.name}｜教师：${c.teacher}｜时间：${c.time}｜学分：${c.credit}｜难度：${c.diff}｜得分：${c.score}`;
+}
+if(s.includes("冲突")){
+return manager.checkConflict()?"存在时间冲突，请调整":"无时间冲突";
+}
+if(s.includes("推荐")){
+let arr=manager.courses.filter(x=>x.score.includes("高分"));
+return "推荐高分课程："+arr.map(x=>x.name).join("，");
+}
+if(s.includes("难度排行")){
+return "难度从高到低：数据结构>操作系统>Java开发>计算机网络>设计模式>数据库>前端>软件工程";
+}
+if(s.includes("清空")){
+manager.clear();
+return "已清空所有选课";
+}
+if(s.includes("功能")){
+return "支持：选课、退课、查学分、查详情、冲突检测、推荐高分课、难度排行、清空选课、直接语音式操作";
+}
+return "输入功能查看全部指令";
+}
+document.onkeydown=e=>{if(e.key==="Enter")sendMsg();};
+renderAll();
+showAiMsg("你好，我是AI选课助手，可直接指令选课、退课、查详情、推荐课程");
+</script>
+</body>
+</html>
